@@ -1,0 +1,28 @@
+{
+  "name": "purescript-refty",
+  "license": "MIT",
+  "homepage": "https://github.com/oreshinya/purescript-refty",
+  "authors": [
+    "Shinya Takahashi <s.takahashi313@gmail.com>"
+  ],
+  "description": "JSON encoder/decoder for api responses",
+  "keywords": [
+    "purescript",
+    "json",
+    "response",
+    "api"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/oreshinya/purescript-refty.git"
+  },
+  "moduleType": [
+    "node"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ]
+}

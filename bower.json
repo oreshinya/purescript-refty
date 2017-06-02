@@ -24,5 +24,9 @@
     "node_modules",
     "bower_components",
     "output"
-  ]
+  ],
+  "dependencies": {
+    "purescript-exists": "^3.0.0",
+    "purescript-maybe": "^3.0.0"
+  }
 }

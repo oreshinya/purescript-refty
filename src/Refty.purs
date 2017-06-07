@@ -1,11 +1,10 @@
 module Refty where
 
 import Prelude
-import Data.Exists (Exists)
 import Data.Foreign (Foreign, toForeign)
 import Data.Foreign.Class (class Encode, encode)
-import Data.Maybe (Maybe)
-import Data.StrMap (StrMap, singleton, fromFoldable)
+import Data.Maybe (Maybe(..))
+import Data.StrMap (StrMap, empty, fromFoldableWith, singleton, unions)
 import Data.Tuple (Tuple(..))
 
 
@@ -14,31 +13,119 @@ type Key = String
 
 type Identifier a = a -> String
 
+type Format =
+  { entities :: StrMap (StrMap Foreign)
+  , references :: StrMap Foreign
+  }
+
 data Entity a
-  = Individual Key (Identifier a) a
-  | Collection Key (Identifier a) (Array a)
+  = Entity Key (Identifier a)
+
+infix 2 Entity as ~
 
 data Reference a
   = HasOne Key (Identifier a)
   | HasMany Key (Identifier a)
+  | Self Key
 
-data AssociationF a = AssociationF (Entity a) (Maybe (Reference a))
+data Params a
+  = Params (Entity a) (Maybe (Reference a))
 
-type Association = Exists AssociationF
+infix 1 Params as ^
 
-data Encoder a = Encoder (Entity a) (Array Association)
+newtype Refty = Refty Format
 
 
-mapify :: forall a. Encode a => Entity a -> StrMap (StrMap Foreign)
-mapify (Individual k i a) = singleton k $ singleton (i a) $ encode a
-mapify (Collection k i as) = singleton k $ fromFoldable $ map (\a -> Tuple (i a) (encode a)) as
 
--- TODO toEntities関数
+hasOne :: forall a. Key -> Identifier a -> Maybe (Reference a)
+hasOne k i = Just $ HasOne k i
 
--- TODO toReferences関数
+infix 2 hasOne as |-|
 
-instance encoderEncode :: Encode a => Encode (Encoder a) where
-  encode encoder = toForeign
-    { entities: [] -- toEntities関数にencoderを渡す
-    , references: [] -- toReferences関数にencoderを渡す
-    }
+
+
+hasMany :: forall a. Key -> Identifier a -> Maybe (Reference a)
+hasMany k i = Just $ HasMany k i
+
+infix 2 hasMany as |<|
+
+
+
+self :: forall a. Key -> Maybe (Reference a)
+self k = Just $ Self k
+
+
+
+formatEntity :: forall a. Encode a => Identifier a -> a -> StrMap Foreign
+formatEntity i x = singleton (i x) $ encode x
+
+
+
+formatHasOne :: forall a. Identifier a -> Identifier a -> a -> StrMap String
+formatHasOne i i' x = singleton (i' x) (i x)
+
+
+
+individual :: forall a. Encode a => a -> Params a -> Format
+individual x (Params (Entity k i) r) =
+  let
+    entities = singleton k $ formatEntity i x
+  in
+    case r of
+      Nothing ->
+        { entities, references: empty }
+      Just (Self k') ->
+        { entities
+        , references: singleton k' $ toForeign $ i x
+        }
+      Just (HasOne k' i') ->
+        { entities
+        , references: singleton k' $ toForeign $ formatHasOne i i' x
+        }
+      Just (HasMany k' i') ->
+        { entities
+        , references: singleton k' $ toForeign $ singleton (i' x) [ i x ]
+        }
+
+
+
+collection :: forall a. Encode a => Array a -> Params a -> Format
+collection xs (Params (Entity k i) r) =
+  let
+    entities = singleton k $ unions $ map (formatEntity i) xs
+  in
+    case r of
+      Nothing ->
+        { entities, references: empty }
+      Just (Self k') ->
+        { entities
+        , references: singleton k' $ toForeign $ map i xs
+        }
+      Just (HasOne k' i') ->
+        { entities
+        , references: singleton k' $ toForeign $
+                       unions $ flip map xs $ formatHasOne i i'
+        }
+      Just (HasMany k' i') ->
+        { entities
+        , references: singleton k' $ toForeign $
+                       fromFoldableWith (flip append) $ map (\x -> Tuple (i' x) [ i x ]) xs
+        }
+
+
+
+concat :: Array Format -> Format
+concat fs =
+  let entities = unions $ flip map fs \f -> f.entities
+      references = unions $ flip map fs \f -> f.references
+   in { entities, references  }
+
+
+
+response :: Format -> Refty
+response = Refty
+
+
+
+instance encodeRefty :: Encode Refty where
+  encode (Refty f) = toForeign f

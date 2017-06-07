@@ -32,6 +32,7 @@
     "purescript-foreign": "^4.0.0",
     "purescript-maps": "^3.0.0",
     "purescript-tuples": "^4.1.0",
-    "purescript-prelude": "^3.0.0"
+    "purescript-prelude": "^3.0.0",
+    "purescript-arrays": "^4.1.0"
   }
 }

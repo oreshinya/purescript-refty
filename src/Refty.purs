@@ -1,4 +1,21 @@
-module Refty where
+module Refty
+  ( Key
+  , Identifier
+  , Format
+  , Entity
+  , Reference
+  , Params
+  , Refty
+  , entity
+  , hasOneRef
+  , hasManyRef
+  , selfRef
+  , params
+  , individual
+  , collection
+  , concat
+  , response
+  ) where
 
 import Prelude
 import Data.Foreign (Foreign, toForeign)
@@ -21,8 +38,6 @@ type Format =
 data Entity a
   = Entity Key (Identifier a)
 
-infix 2 Entity as ~
-
 data Reference a
   = HasOne Key (Identifier a)
   | HasMany Key (Identifier a)
@@ -31,38 +46,37 @@ data Reference a
 data Params a
   = Params (Entity a) (Maybe (Reference a))
 
-infix 1 Params as ^
-
 newtype Refty = Refty Format
 
 
 
-hasOne :: forall a. Key -> Identifier a -> Maybe (Reference a)
-hasOne k i = Just $ HasOne k i
-
-infix 2 hasOne as |-|
+entity :: forall a. Key -> Identifier a -> Entity a
+entity = Entity
 
 
 
-hasMany :: forall a. Key -> Identifier a -> Maybe (Reference a)
-hasMany k i = Just $ HasMany k i
-
-infix 2 hasMany as |<|
+hasOneRef :: forall a. Key -> Identifier a -> Maybe (Reference a)
+hasOneRef k i = Just $ HasOne k i
 
 
 
-self :: forall a. Key -> Maybe (Reference a)
-self k = Just $ Self k
+hasManyRef :: forall a. Key -> Identifier a -> Maybe (Reference a)
+hasManyRef k i = Just $ HasMany k i
 
 
 
-formatEntity :: forall a. Encode a => Identifier a -> a -> StrMap Foreign
-formatEntity i x = singleton (i x) $ encode x
+selfRef :: forall a. Key -> Maybe (Reference a)
+selfRef k = Just $ Self k
 
 
 
-formatHasOne :: forall a. Identifier a -> Identifier a -> a -> StrMap String
-formatHasOne i i' x = singleton (i' x) (i x)
+params :: forall a. Entity a -> Maybe (Reference a) -> Params a
+params = Params
+
+
+
+response :: Format -> Refty
+response = Refty
 
 
 
@@ -122,8 +136,13 @@ concat fs =
 
 
 
-response :: Format -> Refty
-response = Refty
+formatEntity :: forall a. Encode a => Identifier a -> a -> StrMap Foreign
+formatEntity i x = singleton (i x) $ encode x
+
+
+
+formatHasOne :: forall a. Identifier a -> Identifier a -> a -> StrMap String
+formatHasOne i i' x = singleton (i' x) (i x)
 
 
 

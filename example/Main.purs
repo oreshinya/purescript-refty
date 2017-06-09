@@ -1,11 +1,15 @@
 module Main where
 
 import Prelude
-import Data.Foreign.Class (class Encode)
-import Data.Foreign.Generic (defaultOptions, genericEncode, encodeJSON)
+import Data.Foreign (F, unsafeFromForeign)
+import Data.Foreign.Class (class Encode, class Decode)
+import Data.Foreign.Generic (defaultOptions, genericEncode, genericDecode, encodeJSON, decodeJSON)
 import Data.Generic.Rep (class Generic)
+import Data.Either (Either(..))
+import Data.StrMap (StrMap)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
+import Control.Monad.Except (runExcept)
 import Refty as R
 
 
@@ -16,12 +20,18 @@ derive instance genericUser :: Generic User _
 instance encodeUser :: Encode User where
   encode = genericEncode $ defaultOptions { unwrapSingleConstructors = true }
 
+instance decodeUser :: Decode User where
+  decode = genericDecode $ defaultOptions { unwrapSingleConstructors = true }
+
 newtype Comment = Comment { id :: String, userId :: String, content :: String }
 
 derive instance genericComment :: Generic Comment _
 
 instance encodeComment :: Encode Comment where
   encode = genericEncode $ defaultOptions { unwrapSingleConstructors = true }
+
+instance decodeComment :: Decode Comment where
+  decode = genericDecode $ defaultOptions { unwrapSingleConstructors = true }
 
 users :: Array User
 users =
@@ -72,8 +82,27 @@ formatter2 = R.concat
   , R.collection comments commentParams2
   ]
 
+newtype Response =
+  Response
+    { entities :: { users :: StrMap User, comments :: StrMap Comment }
+    , references :: { self :: Array String, userComments :: StrMap String }
+    }
+
+instance decodeResponse :: Decode Response where
+  decode value = pure $ unsafeFromForeign value
+
+dc :: F Response
+dc = decodeJSON $ encodeJSON $ R.response formatter2
+
+foreign import unsafeLog :: forall a e. a -> Eff e Unit
+
 main :: forall e. Eff (console :: CONSOLE | e) Unit
 main = do
   log $ "Collection: " <> (encodeJSON $ R.response formatter)
   log $ "Individual: " <> (encodeJSON $ R.response formatter2)
-
+  decoded
+    where
+      decoded :: Eff (console :: CONSOLE | e) Unit
+      decoded = case (runExcept dc) of
+                  Left _ -> log "failure"
+                  Right (Response r) -> unsafeLog r.entities.comments

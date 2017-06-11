@@ -2,6 +2,8 @@
 
 [![Latest release](http://img.shields.io/github/release/oreshinya/purescript-refty.svg)](https://github.com/oreshinya/purescript-refty/releases)
 
+JSON encoder for api responses.
+
 ## Installation
 
 ```

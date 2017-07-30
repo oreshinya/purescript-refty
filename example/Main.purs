@@ -100,6 +100,7 @@ main :: forall e. Eff (console :: CONSOLE | e) Unit
 main = do
   log $ "Collection: " <> (encodeJSON $ R.response formatter)
   log $ "Individual: " <> (encodeJSON $ R.response formatter2)
+  log $ "Failure: " <> (encodeJSON $ R.failure [ "Error Message 1", "Error Message 2", "Error Message 3" ])
   decoded
     where
       decoded :: Eff (console :: CONSOLE | e) Unit

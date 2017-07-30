@@ -15,6 +15,7 @@ module Refty
   , collection
   , concat
   , response
+  , failure
   ) where
 
 import Prelude
@@ -46,7 +47,9 @@ data Reference a
 data Params a
   = Params (Entity a) (Maybe (Reference a))
 
-newtype Refty = Refty Format
+data Refty
+  = Success Format
+  | Failure (Array String)
 
 
 
@@ -76,7 +79,12 @@ params = Params
 
 
 response :: Format -> Refty
-response = Refty
+response = Success
+
+
+
+failure :: Array String -> Refty
+failure = Failure
 
 
 
@@ -147,4 +155,5 @@ formatHasOne i i' x = singleton (i' x) (i x)
 
 
 instance encodeRefty :: Encode Refty where
-  encode (Refty f) = toForeign f
+  encode (Success f) = toForeign f
+  encode (Failure messages) = encode messages

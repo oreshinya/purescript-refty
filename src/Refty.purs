@@ -1,5 +1,6 @@
 module Refty
-  ( Key
+  ( class Reftyable, reftyify
+  , Key
   , Identifier
   , Format
   , Entity
@@ -19,8 +20,8 @@ module Refty
   ) where
 
 import Prelude
+
 import Data.Foreign (Foreign, toForeign)
-import Data.Foreign.Class (class Encode, encode)
 import Data.Maybe (Maybe(..))
 import Data.StrMap (StrMap, empty, fromFoldableWith, singleton, unions)
 import Data.Tuple (Tuple(..))
@@ -88,7 +89,7 @@ failure = Failure
 
 
 
-individual :: forall a. Encode a => a -> Params a -> Format
+individual :: forall a. Reftyable a => a -> Params a -> Format
 individual x (Params (Entity k i) r) =
   let
     entities = singleton k $ formatEntity i x
@@ -111,7 +112,7 @@ individual x (Params (Entity k i) r) =
 
 
 
-collection :: forall a. Encode a => Array a -> Params a -> Format
+collection :: forall a. Reftyable a => Array a -> Params a -> Format
 collection xs (Params (Entity k i) r) =
   let
     entities = singleton k $ unions $ map (formatEntity i) xs
@@ -144,8 +145,8 @@ concat fs =
 
 
 
-formatEntity :: forall a. Encode a => Identifier a -> a -> StrMap Foreign
-formatEntity i x = singleton (i x) $ encode x
+formatEntity :: forall a. Reftyable a => Identifier a -> a -> StrMap Foreign
+formatEntity i x = singleton (i x) $ reftyify x
 
 
 
@@ -154,6 +155,11 @@ formatHasOne i i' x = singleton (i' x) (i x)
 
 
 
-instance encodeRefty :: Encode Refty where
-  encode (Success f) = toForeign f
-  encode (Failure messages) = encode messages
+class Reftyable a where
+  reftyify :: a -> Foreign
+
+
+
+instance reftyableRefty :: Reftyable Refty where
+  reftyify (Success f) = toForeign f
+  reftyify (Failure messages) = toForeign messages

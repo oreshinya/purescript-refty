@@ -1,15 +1,18 @@
 module Main where
 
 import Prelude
-import Data.Foreign (F, unsafeFromForeign)
-import Data.Foreign.Class (class Encode, class Decode)
-import Data.Foreign.Generic (defaultOptions, genericEncode, genericDecode, encodeJSON, decodeJSON)
-import Data.Generic.Rep (class Generic)
-import Data.Either (Either(..))
-import Data.StrMap (StrMap)
+
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Except (runExcept)
+import Data.Either (Either(..))
+import Data.Foreign (F, unsafeFromForeign)
+import Data.Foreign.Class (class Encode, class Decode, encode, decode)
+import Data.Foreign.Generic (defaultOptions, genericEncode, genericDecode)
+import Data.Generic.Rep (class Generic)
+import Data.StrMap (StrMap)
+import Global.Unsafe (unsafeStringify)
+import Refty (reftyify)
 import Refty as R
 
 
@@ -20,6 +23,9 @@ derive instance genericUser :: Generic User _
 instance encodeUser :: Encode User where
   encode = genericEncode $ defaultOptions { unwrapSingleConstructors = true }
 
+instance reftyableUser :: R.Reftyable User where
+  reftyify = encode
+
 instance decodeUser :: Decode User where
   decode = genericDecode $ defaultOptions { unwrapSingleConstructors = true }
 
@@ -29,6 +35,9 @@ derive instance genericComment :: Generic Comment _
 
 instance encodeComment :: Encode Comment where
   encode = genericEncode $ defaultOptions { unwrapSingleConstructors = true }
+
+instance reftyableComment :: R.Reftyable Comment where
+  reftyify = encode
 
 instance decodeComment :: Decode Comment where
   decode = genericDecode $ defaultOptions { unwrapSingleConstructors = true }
@@ -92,15 +101,15 @@ instance decodeResponse :: Decode Response where
   decode value = pure $ unsafeFromForeign value
 
 dc :: F Response
-dc = decodeJSON $ encodeJSON $ R.response formatter2
+dc = decode $ R.reftyify $ R.response formatter2
 
 foreign import unsafeLog :: forall a e. a -> Eff e Unit
 
 main :: forall e. Eff (console :: CONSOLE | e) Unit
 main = do
-  log $ "Collection: " <> (encodeJSON $ R.response formatter)
-  log $ "Individual: " <> (encodeJSON $ R.response formatter2)
-  log $ "Failure: " <> (encodeJSON $ R.failure [ "Error Message 1", "Error Message 2", "Error Message 3" ])
+  log $ "Collection: " <> (unsafeStringify $ reftyify $ R.response formatter)
+  log $ "Individual: " <> (unsafeStringify $ reftyify $ R.response formatter2)
+  log $ "Failure: " <> (unsafeStringify $ reftyify $ R.failure [ "Error Message 1", "Error Message 2", "Error Message 3" ])
   decoded
     where
       decoded :: Eff (console :: CONSOLE | e) Unit

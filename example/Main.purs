@@ -95,6 +95,7 @@ main = do
   log $ "Collection: " <> (unsafeStringify $ write $ R.response formatter)
   log $ "Individual: " <> (unsafeStringify $ write $ R.response formatter2)
   log $ "Failure: " <> (unsafeStringify $ write $ R.failure [ "Error Message 1", "Error Message 2", "Error Message 3" ])
+  log $ "NoBody: " <> (unsafeStringify $ write R.noBody)
   decoded
     where
       decoded :: Eff (console :: CONSOLE | e) Unit

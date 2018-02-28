@@ -14,6 +14,7 @@ module Refty
   , individual
   , collection
   , concat
+  , noBody
   , response
   , failure
   ) where
@@ -24,7 +25,7 @@ import Data.Foreign (Foreign, toForeign)
 import Data.Maybe (Maybe(..))
 import Data.StrMap (StrMap, empty, fromFoldableWith, singleton, unions)
 import Data.Tuple (Tuple(..))
-import Simple.JSON (class WriteForeign, write, writeImpl)
+import Simple.JSON (class WriteForeign, writeImpl)
 
 
 
@@ -51,6 +52,7 @@ data Params a
 data Refty
   = Success Format
   | Failure (Array String)
+  | NoBody
 
 
 
@@ -76,6 +78,11 @@ selfRef k = Just $ Self k
 
 params :: forall a. Entity a -> Maybe (Reference a) -> Params a
 params = Params
+
+
+
+noBody :: Refty
+noBody = NoBody
 
 
 
@@ -146,7 +153,7 @@ concat fs =
 
 
 formatEntity :: forall a. WriteForeign a => Identifier a -> a -> StrMap Foreign
-formatEntity i x = singleton (i x) $ write x
+formatEntity i x = singleton (i x) $ writeImpl x
 
 
 
@@ -158,3 +165,4 @@ formatHasOne i i' x = singleton (i' x) (i x)
 instance writeForeignRefty :: WriteForeign Refty where
   writeImpl (Success f) = writeImpl f
   writeImpl (Failure messages) = writeImpl messages
+  writeImpl NoBody = writeImpl ""

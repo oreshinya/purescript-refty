@@ -1,6 +1,5 @@
 module Refty
-  ( class Reftyable, reftyify
-  , Key
+  ( Key
   , Identifier
   , Format
   , Entity
@@ -25,6 +24,7 @@ import Data.Foreign (Foreign, toForeign)
 import Data.Maybe (Maybe(..))
 import Data.StrMap (StrMap, empty, fromFoldableWith, singleton, unions)
 import Data.Tuple (Tuple(..))
+import Simple.JSON (class WriteForeign, write, writeImpl)
 
 
 
@@ -89,7 +89,7 @@ failure = Failure
 
 
 
-individual :: forall a. Reftyable a => a -> Params a -> Format
+individual :: forall a. WriteForeign a => a -> Params a -> Format
 individual x (Params (Entity k i) r) =
   let
     entities = singleton k $ formatEntity i x
@@ -112,7 +112,7 @@ individual x (Params (Entity k i) r) =
 
 
 
-collection :: forall a. Reftyable a => Array a -> Params a -> Format
+collection :: forall a. WriteForeign a => Array a -> Params a -> Format
 collection xs (Params (Entity k i) r) =
   let
     entities = singleton k $ unions $ map (formatEntity i) xs
@@ -145,8 +145,8 @@ concat fs =
 
 
 
-formatEntity :: forall a. Reftyable a => Identifier a -> a -> StrMap Foreign
-formatEntity i x = singleton (i x) $ reftyify x
+formatEntity :: forall a. WriteForeign a => Identifier a -> a -> StrMap Foreign
+formatEntity i x = singleton (i x) $ write x
 
 
 
@@ -155,11 +155,6 @@ formatHasOne i i' x = singleton (i' x) (i x)
 
 
 
-class Reftyable a where
-  reftyify :: a -> Foreign
-
-
-
-instance reftyableRefty :: Reftyable Refty where
-  reftyify (Success f) = toForeign f
-  reftyify (Failure messages) = toForeign messages
+instance writeForeignRefty :: WriteForeign Refty where
+  writeImpl (Success f) = writeImpl f
+  writeImpl (Failure messages) = writeImpl messages

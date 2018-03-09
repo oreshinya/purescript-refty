@@ -4,9 +4,8 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Except (runExcept)
 import Data.Either (Either(..))
-import Data.Foreign (F)
+import Data.Foreign (MultipleErrors)
 import Data.StrMap (StrMap)
 import Global.Unsafe (unsafeStringify)
 import Refty as R
@@ -81,7 +80,7 @@ type Response =
 
 
 
-dc :: F Response
+dc :: Either MultipleErrors Response
 dc = read $ write $ R.response formatter2
 
 
@@ -99,7 +98,7 @@ main = do
   decoded
     where
       decoded :: Eff (console :: CONSOLE | e) Unit
-      decoded = case (runExcept dc) of
+      decoded = case dc of
                   Left e -> unsafeLog e
                   Right r -> do
                     unsafeLog r

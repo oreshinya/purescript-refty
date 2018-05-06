@@ -2,6 +2,8 @@
 
 [![Latest release](http://img.shields.io/github/release/oreshinya/purescript-refty.svg)](https://github.com/oreshinya/purescript-refty/releases)
 
+**[OBSOLETED] No longer maintenance.**
+
 Formatted JSON generator for API server inspired by normalizr.
 Reference + Entity = Refty ♡
 
